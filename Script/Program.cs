@@ -53,15 +53,8 @@
  * 
  * Currently reading in two files of different format this may change as well.
  * 
- * May need logic to parse a string containing the account/card number, s/v/l, and SLId
- * 
  * Two additional reports which will be sent into synergy will be created. One for visa and one 
  * for SL transactions.
- * 
- */
-
-/*
- * Will need  to split the account, SLID, and Share/Loan type from lookup entered
  * 
  */
 
