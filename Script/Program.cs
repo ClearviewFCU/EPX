@@ -1,4 +1,4 @@
-﻿//EPX Visa payment script
+//EPX Visa payment script
 //Author Tom Strohecker
 /*Script Description
  * Script that reads in the EPX visa files and creates an fdr.tap file to be send over to PSCU
@@ -80,9 +80,10 @@
  *  
  *Update 12/02/2019- Tom Strohecker 
  *  Added logic to account for issue when validating if credit card payment for CC file
+ *
+ *Update 04/4/2023 - Tom Strohecker 
+ * Refactored code, updateded logic to account for file layout changes  
  */
-
-//TODO: Add logic to ensure that there is an actual visa payment for the file to be created. 
 
 using System;
 using System.Collections.Generic;
