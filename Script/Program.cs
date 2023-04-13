@@ -1,4 +1,4 @@
-//EPX Visa payment script
+﻿//EPX Visa payment script
 //Author Tom Strohecker
 /*Script Description
  * Script that reads in the EPX visa files and creates an fdr.tap file to be send over to PSCU
@@ -132,8 +132,7 @@ namespace EPX_File_Script
                     if (f.IndexOf("_S") <= 0 && f.IndexOf("RECON") > 0)
                     {
                         FileName = SourceDirectory + "fdr.tap" + ".txt";
-                        fieldLocations.fieldsMapped = false;
-
+                        
                         if (f.IndexOf("ACHRECON") > 0)
                         {
                             ProcessFile(f, "A");
@@ -157,6 +156,7 @@ namespace EPX_File_Script
                 Console.WriteLine("The process failed: {0}", e.ToString());
             }
         }
+
         private static void PrintTotals() 
         {
             if (File.Exists(OpticalFile))
@@ -195,9 +195,10 @@ namespace EPX_File_Script
 
         private static void ProcessFile(string f, string fileType) 
         {
+            fieldLocations.fieldsMapped = false;
+
             foreach (var i in File.ReadLines(f))
             {
-                Transaction transaction = new Transaction();
                 string Line = i;
                 Heading = WriteHeader(Heading);
                 string ParsedLine = RemoveCharacters(Line);
@@ -208,7 +209,7 @@ namespace EPX_File_Script
                     fieldLocations.fieldsMapped = GetFieldLocations(columns);
                 }
 
-                transaction = PopulateTransaction(columns);
+                Transaction transaction = PopulateTransaction(columns);
                 transaction.FileType = fileType;
                 ProcessPayment(transaction, i);
             }
