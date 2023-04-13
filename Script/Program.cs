@@ -96,7 +96,7 @@ namespace EPX_File_Script
         //Directory Paths
         public static string SourceDirectory = @"C:\FileTransfers\Incoming_Files\EPX\";//Start folder of file
         public static string ProcessingDirectory = @"C:\FileTransfers\Incoming_Files\EPX\Processing\";//Processing Directory
-        public static string ArchiveDirectory = @"C:\FileTransfers\Incoming_Files\EPX\Archive\";//Archive Directory after processing finishes
+        public static string ArchiveDirectory = @"C:\FileTransfers\Incoming_Files\EPX\Archive\";//Archive Directory after processing finishes        
         public static string[] poschar = { "{", "A", "B", "C", "D", "E", "F", "G", "H", "I" };
         
         //Synergy Files
@@ -114,8 +114,7 @@ namespace EPX_File_Script
         public static FieldLocations fieldLocations = new FieldLocations();
         public static Totals totals = new Totals();
         public static string FileName;//file name variable used for creating and changing file
-        public static bool fieldsMapped;
-
+      
         static void Main()
         {                   
             try
@@ -133,19 +132,17 @@ namespace EPX_File_Script
                     if (f.IndexOf("_S") <= 0 && f.IndexOf("RECON") > 0)
                     {
                         FileName = SourceDirectory + "fdr.tap" + ".txt";
+                        fieldLocations.fieldsMapped = false;
 
-                        if (f.IndexOf("ACHRECON") > 0)//achrecon
+                        if (f.IndexOf("ACHRECON") > 0)
                         {
-                            fieldsMapped = false;
                             ProcessFile(f, "A");
                         }//ACHRECON
                         else if (f.IndexOf("CCRECON") > 0)
                         {
-                            fieldsMapped = false;
                             ProcessFile(f, "C");
                         }//CCRECON
 
-                        //move file to archive folder after it has finished being processed
                         ArchiveFile(f);
                     }
                 }
@@ -205,10 +202,10 @@ namespace EPX_File_Script
                 Heading = WriteHeader(Heading);
                 string ParsedLine = RemoveCharacters(Line);
                 string[] columns = ParsedLine.Split('\t');
-
-                if (fieldsMapped == false)
+                
+                if (fieldLocations.fieldsMapped == false)
                 {
-                    fieldsMapped = GetFieldLocations(columns);
+                    fieldLocations.fieldsMapped = GetFieldLocations(columns);
                 }
 
                 transaction = PopulateTransaction(columns);
@@ -299,23 +296,12 @@ namespace EPX_File_Script
             string VCount = Convert.ToString(C);
             int num = Convert.ToInt16(VCount.Substring(VCount.Length - 1, 1));
             VCount = VCount[0..^1] + poschar[num];
-
-            while (VCount.Length < 7)
-            {
-                VCount = "0" + VCount;
-            }
-            
-            //format the amount variable for the trailer lines
-            string VAmount = Convert.ToString(Amt);
+            VCount = PadString(VCount, 7, "0", "FRONT");
+            string VAmount = Amt.ToString("N2");//Convert.ToString(Amt);
+            VAmount = FormatMoneyString(VAmount);
             num = Convert.ToInt16(VAmount.Substring(VAmount.Length - 1, 1));
             VAmount = VAmount[0..^1] + poschar[num];
-            
-            while (VAmount.Length < 9)
-            {
-                VAmount = "0" + VAmount;
-            }
-
-            //write the trailer lines to the file
+            VAmount = PadString(VAmount, 9, "0", "FRONT");
             L8 = L8 + VCount + VAmount + "                                              ";
             L9 = L9 + "00" + VCount + "00" + VAmount + "                                                  ";
             WriteToFile(FName, L8);
@@ -396,10 +382,7 @@ namespace EPX_File_Script
 
         public static void ProcessPayment(Transaction transaction, string i) 
         {
-            string datestamp = DateTime.Now.ToString("MMddyyyy hhmm");
-            string OpticalPayment = SourceDirectory + "EPX SHLN Payments" + datestamp + ".txt";
             bool result = double.TryParse(transaction.Account, out _);
-            string episysFile = SourceDirectory + "EPX.TRAN.txt";
             transaction.VisaFlag = false;
             transaction.NewVisaFlag = false;
             string basefee = "10"; //Base fee value
@@ -432,16 +415,16 @@ namespace EPX_File_Script
                 else if (((transaction.Account.Substring(0, 1) == "1" || transaction.Account.Substring(0, 1) == "2") && postedTransaction && transaction.Account.Length == 13) || (transaction.VisaFlag))//create file to be sent to episys as letter file
                 {
                     transaction.PaymentAmount = transaction.PaymentAmount.Replace("$", "");
-                    transaction.FeeAmount = transaction.FeeAmount.Replace("$", "");//columns[13]
+                    transaction.FeeAmount = transaction.FeeAmount.Replace("$", "");
 
                     if (File.Exists(OpticalPayment))
                     {
                         using StreamWriter sw = File.AppendText(OpticalPayment);
                         totals.SLTot += Convert.ToDouble(transaction.PaymentAmount);
 
-                        if (transaction.FeeAmount != "")//col13
+                        if (transaction.FeeAmount != "")
                         {
-                            totals.SLFee += Convert.ToDouble(transaction.FeeAmount); //col13
+                            totals.SLFee += Convert.ToDouble(transaction.FeeAmount); 
                         }
 
                         WritetoOpticalFile(sw, transaction);
@@ -515,28 +498,13 @@ namespace EPX_File_Script
             
             transaction.PaymentAmount = FormatMoneyString(transaction.PaymentAmount);
             transaction.FeeAmount = FormatMoneyString(transaction.FeeAmount);
-            transaction.PaymentAmount = transaction.PaymentAmount.Replace("$", "");
-            
-            if (transaction.NewVisaFlag == true)
-            {
-                totals.VisaAmount += (Convert.ToDouble(transaction.PaymentAmount) - Convert.ToDouble(transaction.FeeAmount));//total amount for trailer lines **subtract the fee amount from the payment line
-            }
-            else
-            {
-                totals.OldVisaAmount += (Convert.ToDouble(transaction.PaymentAmount) - Convert.ToDouble(transaction.FeeAmount));//total amount for trailer lines **subtract the fee amount from the payment line
-            }
-
+            transaction.PaymentAmount = transaction.PaymentAmount.Replace("$", "");          
             string vma = Convert.ToString(Convert.ToDouble(transaction.PaymentAmount) - Convert.ToDouble(transaction.FeeAmount));
             vma = vma[0..^1];
             int num = Convert.ToInt16(transaction.PaymentAmount.Substring(transaction.PaymentAmount.Length - 1, 1));//trail character for amount                                                                                                                    //lineamount=payment amount - fee amount                                                                                                            //lineamount = Convert.ToString((Convert.ToInt32(columns[9]) - Convert.ToInt32(columns[15]))).Substring(0, Convert.ToString((Convert.ToInt32(columns[9]) - Convert.ToInt32(columns[15]))).Length - 1) + poschar[num];
             string lineamount = vma + poschar[num];
-           
-            while (lineamount.Length < 7) 
-            { 
-                lineamount = "0" + lineamount; 
-            }
-
-            //Each data line will be formatted 5 + card number + date + amount + P
+            lineamount = PadString(lineamount, 7, "0", "FRONT");
+             //Each data line will be formatted 5 + card number + date + amount + P
             bool isNumeric = long.TryParse(transaction.Account, out _);
             string temp = transaction.Account;
 
@@ -548,23 +516,20 @@ namespace EPX_File_Script
             
             string dataline = "5" + temp + transaction.PostDate.Substring(0, 2) + transaction.PostDate.Substring(3, 2) + transaction.PostDate.Substring(transaction.PostDate.Length - 2, 2) + lineamount + "P";
             string Line = dataline + "                                                ";
-            
-            if (transaction.NewVisaFlag == true)
-                totals.VisaCount++; 
-            else
-                totals.OldVisaCount++; 
-            
             WriteToFile(FileName, Line);
             Line = transaction.Account + "|" + transaction.PostDate + "|" + transaction.PaymentAmount + "|" + transaction.FeeAmount + "|" + transaction.FileType;
             WriteToFile(episysFile, Line);
             return;
         }
 
-        public static String PadString(string inputString, int charLength) 
+        public static String PadString(string inputString, int charLength, string padChar, string padLoc) 
         {
             while (inputString.Length < charLength)
             {
-                inputString += " ";
+                if (padLoc == "END")
+                    inputString += padChar;
+                else
+                    inputString = padChar + inputString;
             }
 
             return inputString;
@@ -575,8 +540,9 @@ namespace EPX_File_Script
             if (amount.Contains("."))
                 amount = amount.Replace(".", "");           
             else 
-                amount += "00"; 
+                amount += "00";
 
+            amount = amount.Replace(",", "");
             return amount;
         }
 
@@ -597,25 +563,23 @@ namespace EPX_File_Script
 
         public static void UpdateCreditCardTotals(Transaction transaction) 
         {
-            if (transaction.Account.Substring(0, 1) == "4")
+            if (transaction.NewVisaFlag == true)
             {
-                totals.visatot += Convert.ToDouble(transaction.PaymentAmount);
+                totals.CCtotal += Convert.ToDouble(transaction.PaymentAmount);
+                totals.VisaAmount += (Convert.ToDouble(transaction.PaymentAmount) - Convert.ToDouble(transaction.FeeAmount));//total amount for trailer lines **subtract the fee amount from the payment line
+                totals.VisaCount++;
+
+                if (transaction.FeeAmount != "")
+                    totals.CCFee += Convert.ToDouble(transaction.FeeAmount);
             }
             else
             {
-                totals.CCtotal += Convert.ToDouble(transaction.PaymentAmount);
-            }
+                totals.visatot += Convert.ToDouble(transaction.PaymentAmount);
+                totals.OldVisaAmount += (Convert.ToDouble(transaction.PaymentAmount) - Convert.ToDouble(transaction.FeeAmount));//total amount for trailer lines **subtract the fee amount from the payment line
+                totals.OldVisaCount++;
 
-            if (transaction.FeeAmount != "")
-            {
-                if (transaction.Account.Substring(0, 1) == "4")
-                {
+                if (transaction.FeeAmount != "")
                     totals.visafee += Convert.ToDouble(transaction.FeeAmount);
-                }
-                else
-                {
-                    totals.CCFee += Convert.ToDouble(transaction.FeeAmount);
-                }
             }
 
             return;
@@ -638,9 +602,9 @@ namespace EPX_File_Script
         public static void WritetoOpticalFile(StreamWriter sw, Transaction transaction) 
         {
             string OpticalLine = transaction.Account + "       " + transaction.PaymentAmount;
-            OpticalLine = PadString(OpticalLine, 49);
+            OpticalLine = PadString(OpticalLine, 49, " ", "END");
             OpticalLine += transaction.FeeAmount;
-            OpticalLine = PadString(OpticalLine, 67);
+            OpticalLine = PadString(OpticalLine, 67, " ", "END");
             OpticalLine += transaction.PostDate;
             sw.WriteLine(OpticalLine);
         }
