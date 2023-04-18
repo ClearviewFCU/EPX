@@ -624,6 +624,7 @@ namespace EPX_File_Script
                 return true;
             else if (transaction.Status.Contains("(00)"))
                 return true;
+
             return false;
         }
 
