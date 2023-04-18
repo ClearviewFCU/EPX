@@ -1,4 +1,4 @@
-﻿//EPX Visa payment script
+//EPX Visa payment script
 //Author Tom Strohecker
 /*Script Description
  * Script that reads in the EPX visa files and creates an fdr.tap file to be send over to PSCU
@@ -76,6 +76,10 @@
  *
  *Update 04/4/2023 - Tom Strohecker 
  * Refactored code, updateded logic to account for file layout changes  
+ *
+ *Update 04/18/2023 - Tom Strohecker 
+ * Added logic to format date when file is saved as a csv and not txt
+ * Added logic to exception transaction when it is voided: does not contain (00) as status code.
  */
 
 using System;
@@ -96,7 +100,7 @@ namespace EPX_File_Script
         //Directory Paths
         public static string SourceDirectory = @"C:\FileTransfers\Incoming_Files\EPX\";//Start folder of file
         public static string ProcessingDirectory = @"C:\FileTransfers\Incoming_Files\EPX\Processing\";//Processing Directory
-        public static string ArchiveDirectory = @"C:\FileTransfers\Incoming_Files\EPX\Archive\";//Archive Directory after processing finishes        
+        public static string ArchiveDirectory = @"C:\FileTransfers\Incoming_Files\EPX\Archive\";//Archive Directory after processing finishes
         public static string[] poschar = { "{", "A", "B", "C", "D", "E", "F", "G", "H", "I" };
         
         //Synergy Files
@@ -514,13 +518,35 @@ namespace EPX_File_Script
                 temp = temp[1..].TrimStart().TrimEnd();
                 isNumeric = long.TryParse(temp, out _);
             }
-            
-            string dataline = "5" + temp + transaction.PostDate.Substring(0, 2) + transaction.PostDate.Substring(3, 2) + transaction.PostDate.Substring(transaction.PostDate.Length - 2, 2) + lineamount + "P";
+            string dateString = FormatDateString(transaction.PostDate);
+            string dataline = "5" + temp + dateString + lineamount + "P";
             string Line = dataline + "                                                ";
             WriteToFile(FileName, Line);
             Line = transaction.Account + "|" + transaction.PostDate + "|" + transaction.PaymentAmount + "|" + transaction.FeeAmount + "|" + transaction.FileType;
             WriteToFile(episysFile, Line);
             return;
+        }
+
+        public static string FormatDateString(string postDate) 
+        {
+            string[] tempstringarray = postDate.Split('/');
+
+            if (tempstringarray.Length > 1) 
+            {
+                if (tempstringarray[0].Length < 2)
+                    tempstringarray[0] = "0" + tempstringarray[0];
+
+                if (tempstringarray[1].Length < 2)
+                    tempstringarray[1] = "0" + tempstringarray[1];
+
+                if(tempstringarray[2].Length > 2)
+                    tempstringarray[2] = tempstringarray[2].Substring(tempstringarray[2].Length - 2, 2);
+                
+
+                return tempstringarray[0] + tempstringarray[1] + tempstringarray[2];
+            }
+
+            return "No Date";
         }
 
         public static String PadString(string inputString, int charLength, string padChar, string padLoc) 
@@ -590,13 +616,14 @@ namespace EPX_File_Script
         {
             if (transaction.Status.Contains("Posted"))
                 return true;
-            else if (transaction.Status.Contains("Approved") || transaction.Status.Contains("Settled") || transaction.PaymentType.Contains("Purchase"))
+            else if ((transaction.Status.Contains("Approved") || transaction.Status.Contains("Settled")) && transaction.PaymentType.Contains("Purchase"))
                 return true;
-            else if (transaction.Status.Contains("Pending") || transaction.Status.Contains("Settled"))
+            else if (transaction.Status.Contains("Pending") || transaction.Status.Contains("Settled") || transaction.Status.Contains("Approved"))
                 return true;
             else if ((transaction.Status.Contains("Pending") || transaction.Status.Contains("Settled") || transaction.Status.Contains("Purchase")) && transaction.PaymentType != "")
                 return true;
-
+            else if (transaction.Status.Contains("(00)"))
+                return true;
             return false;
         }
 
