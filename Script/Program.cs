@@ -98,13 +98,9 @@ namespace EPX_File_Script
         public static bool Heading;
 
         //Directory Paths
-        //public static string SourceDirectory = @"C:\FileTransfers\Incoming_Files\EPX\";//Start folder of file
-        //public static string ProcessingDirectory = @"C:\FileTransfers\Incoming_Files\EPX\Processing\";//Processing Directory
-        //public static string ArchiveDirectory = @"C:\FileTransfers\Incoming_Files\EPX\Archive\";//Archive Directory after processing finishes
-        //Directory Paths
-        public static string SourceDirectory = @"Z:\Projects\In Progress\2023\EPX\Files\";//Start folder of file
-        public static string ProcessingDirectory = @"Z:\Projects\In Progress\2023\EPX\Files\Process\";//Processing Directory
-        public static string ArchiveDirectory = @"Z:\Projects\In Progress\2023\EPX\Files\Archive\";//Archive Directory after processing finishes
+        public static string SourceDirectory = @"C:\FileTransfers\Incoming_Files\EPX\";//Start folder of file
+        public static string ProcessingDirectory = @"C:\FileTransfers\Incoming_Files\EPX\Processing\";//Processing Directory
+        public static string ArchiveDirectory = @"C:\FileTransfers\Incoming_Files\EPX\Archive\";//Archive Directory after processing finishes
         public static string[] poschar = { "{", "A", "B", "C", "D", "E", "F", "G", "H", "I" };
         
         //Synergy Files
