@@ -80,6 +80,9 @@
  *Update 04/18/2023 - Tom Strohecker 
  * Added logic to format date when file is saved as a csv and not txt
  * Added logic to exception transaction when it is voided: does not contain (00) as status code.
+ * 
+ * Update 05/24/2023 - Tom Strohecker
+ * Added logic to not push CC fees to report when voided
  */
 
 using System;
