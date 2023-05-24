@@ -98,9 +98,13 @@ namespace EPX_File_Script
         public static bool Heading;
 
         //Directory Paths
-        public static string SourceDirectory = @"C:\FileTransfers\Incoming_Files\EPX\";//Start folder of file
-        public static string ProcessingDirectory = @"C:\FileTransfers\Incoming_Files\EPX\Processing\";//Processing Directory
-        public static string ArchiveDirectory = @"C:\FileTransfers\Incoming_Files\EPX\Archive\";//Archive Directory after processing finishes
+        //public static string SourceDirectory = @"C:\FileTransfers\Incoming_Files\EPX\";//Start folder of file
+        //public static string ProcessingDirectory = @"C:\FileTransfers\Incoming_Files\EPX\Processing\";//Processing Directory
+        //public static string ArchiveDirectory = @"C:\FileTransfers\Incoming_Files\EPX\Archive\";//Archive Directory after processing finishes
+        //Directory Paths
+        public static string SourceDirectory = @"Z:\Projects\In Progress\2023\EPX\Files\";//Start folder of file
+        public static string ProcessingDirectory = @"Z:\Projects\In Progress\2023\EPX\Files\Process\";//Processing Directory
+        public static string ArchiveDirectory = @"Z:\Projects\In Progress\2023\EPX\Files\Archive\";//Archive Directory after processing finishes
         public static string[] poschar = { "{", "A", "B", "C", "D", "E", "F", "G", "H", "I" };
         
         //Synergy Files
@@ -416,8 +420,8 @@ namespace EPX_File_Script
                 {
                     PostCCPayment(transaction);
                 }
-                //File created will need to be placed into Episys so that the transactions can be posted to the member account
-                else if (((transaction.Account.Substring(0, 1) == "1" || transaction.Account.Substring(0, 1) == "2") && postedTransaction && transaction.Account.Length == 13) || (transaction.VisaFlag))//create file to be sent to episys as letter file
+                else if ((((transaction.Account.Substring(0, 1) == "1" || transaction.Account.Substring(0, 1) == "2") && transaction.Account.Length == 13) || 
+                           transaction.VisaFlag) && postedTransaction)//create file to be sent to episys as letter file
                 {
                     transaction.PaymentAmount = transaction.PaymentAmount.Replace("$", "");
                     transaction.FeeAmount = transaction.FeeAmount.Replace("$", "");
